@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>ColorPicker</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		body {
+			font: 14pt sans-serif;
+		}
+		#form {
+			width: 530px;
+			padding: 5px;
+			border-radius: 5px;
+			background: #FFF;
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			display: flex;
+			justify-content: space-between;
+		}
+		.side {
+			width: 255px;
+			margin: 5px;
+		}
+		#cvs {
+			width: 255px;
+			height: 255px;
+		}
+		#color {
+			width: 255px;
+			height: 50px;
+			border-radius: 5px;
+		}
+		input[type=range] {
+			width: 255px;
+		}
+		input[type=text] {
+			font: 14pt sans-serif;
+			width: 240px;
+			margin-top: 10px;
+			padding: 3px;
+		}
+	</style>
+	<script>
+		//  ----------------------------- Переменные -----------------------------
+		// DOM
+		var red, green, blue,
+			colorEl, cvs, ctx, 
+			out;
+
+		// other
+		var color = {r: 0, g: 0, b: 0};
+		var point = {x: 128, y: 255};
+		var mouseDown = false;
+
+		var screenSaver = false;
+		var ssColor = {r: randInt(0, 255), g: randInt(0, 255), b: randInt(0, 255)};
+
+		//  ----------------------------- Функции -----------------------------
+
+		// Обновляет холст и цвет
+		function Update() {
+			if(!screenSaver) {
+				// Обновляем положение
+				point.x = green.value;
+				point.y = blue.value;
+				// Обновляем цвет
+				color.r = red.value;
+				color.g = point.x;
+				color.b = point.y;
+			}
+			// Указываем цвет
+			document.body.style.background = 'rgb('+color.r+', '+color.g+', '+color.b+')';
+			colorEl.style.background = 'rgb('+color.r+', '+color.g+', '+color.b+')';
+
+			// Рисуем градиент
+			for(let i = 0; i < 128; i++)
+				for(let j = 0; j < 128; j++) {
+					ctx.beginPath();
+					ctx.fillStyle = 'rgb('+color.r+', '+(i*2)+', '+(j*2)+')';
+					ctx.fillRect(i*2, j*2, 2, 2);
+				}
+
+			// Рисуем поинт
+			ctx.beginPath();
+			ctx.strokeStyle = '#FFF';
+			ctx.arc(point.x, point.y, 5, Math.PI * 2, false);
+			ctx.stroke();
+
+			// Вывод
+			out.value = 'rgb('+color.r+', '+color.g+', '+color.b+')';
+		}
+
+		// Функция скринсейвера
+		function screen() {
+			// Если он запущен
+			if(screenSaver) {
+				// Скрываем форму
+				document.querySelector('#form').style.display = 'none';
+
+				// Проверяем, тот ли сейчас цвет
+				if((color.r==ssColor.r)
+					&&(color.g==ssColor.g)
+					&&(color.b==ssColor.b)) {
+					ssColor.r = randInt(0, 255);
+					ssColor.g = randInt(0, 255);
+					ssColor.b = randInt(0, 255);
+				} else {
+					// Красный
+					if(color.r<ssColor.r) color.r++;
+					if(color.r>ssColor.r) color.r--;
+					// Зелёный
+					if(color.g<ssColor.g) color.g++;
+					if(color.g>ssColor.g) color.g--;
+					// Синий
+					if(color.b<ssColor.b) color.b++;
+					if(color.b>ssColor.b) color.b--;
+				}
+				Update();
+				setTimeout(screen, 3);
+			} else {
+				red.value = color.r;
+				green.value = color.g;
+				blue.value = color.b;
+				point.x = color.g;
+				point.y = color.b;
+				document.querySelector('#form').style.display = 'flex';
+			}
+		}
+
+		function randInt(min, max) {
+			return Math.floor(Math.random() * (max - min) + min);
+		}
+
+		// ----------------------------- События -----------------------------
+
+		// Мышь зажата
+		document.addEventListener('mousedown', () => { mouseDown = true; });
+		// Мышь отпущена
+		document.addEventListener('mouseup', () => { mouseDown = false; });
+
+		// При загрузке страницы
+		document.addEventListener('DOMContentLoaded', () => {
+			red = document.querySelector('#red');
+			green = document.querySelector('#green');
+			blue = document.querySelector('#blue');
+			out = document.querySelector('#out');
+			colorEl = document.querySelector('#color');
+			cvs = document.querySelector('#cvs');
+			ctx = cvs.getContext('2d');
+			cvs.width = 255; cvs.height = 255;
+
+			cvs.addEventListener('mousemove', (e) => {
+				if(mouseDown) {
+					point.x = e.offsetX;
+					point.y = e.offsetY;
+					green.value = point.x;
+					blue.value = point.y;
+					Update();
+				}
+			});
+
+			red.oninput = Update;
+			green.oninput = Update;
+			blue.oninput = Update;
+			Update();
+		});
+
+		// Нажатие на enter
+		document.addEventListener('keydown', (e) => {
+			if(e.keyCode==13) { 
+				screenSaver = !screenSaver;
+				screen();
+			}
+		});
+
+	</script>
+</head>
+<body>
+	<div id="form">
+		<div id="left" class="side">
+			<canvas id="cvs"></canvas>
+		</div>
+		<div id="right" class="side">
+			<h3>Настройки цвета</h3>
+			<div id="color"></div>
+			<p>Красный:</p>
+			<input type="range" id="red" min="0" max="255">
+			<p>Зелёный:</p>
+			<input type="range" id="green" min="0" max="255">
+			<p>Синий:</p>
+			<input type="range" id="blue" min="0" max="255">
+			<input type="text" id="out">
+		</div>
+	</div>
+</body>
+</html>
